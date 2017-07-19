@@ -7,6 +7,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import javax.jws.WebParam;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -20,7 +21,24 @@ public class PersistenceTest {
         session.beginTransaction();
         session.createQuery("delete from Person").executeUpdate();
         session.createQuery("delete from Company ").executeUpdate();
+        session.getTransaction().commit();
         session.close();
+    }
+
+    @Test
+    public void simpleFetch() throws Exception {
+        Person p = ModelFactory.createPerson();
+        Session session = HibernateUtil.getSessionFactory().openSession();
+        session.beginTransaction();
+        session.save(p);
+        session.getTransaction().commit();
+        session.close();
+
+        session = HibernateUtil.getSessionFactory().openSession();
+        final Person pClone = session.get(Person.class, p.getDatabaseId());
+        session.close();
+
+        assertEquals(p, pClone);
     }
 
     @Test
