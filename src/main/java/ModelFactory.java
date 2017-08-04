@@ -35,16 +35,6 @@ public class ModelFactory {
         return ps;
     }
 
-    public static Company createRandomCompany() {
-        Company c = new Company();
-        c.setName(UUID.randomUUID().toString());
-
-        final Collection<Person> personList = createPersonList(RNDM.nextInt(10) * 35);
-        personList.parallelStream().forEach(p -> p.setCompany(c));
-        c.setPersons(new HashSet<>(personList));
-        return c;
-    }
-
     static final String AB = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
     static SecureRandom rnd = new SecureRandom();
 

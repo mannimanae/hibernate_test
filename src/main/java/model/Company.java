@@ -1,39 +1,47 @@
 package model;
 
-import org.hibernate.annotations.*;
+import org.hibernate.annotations.NaturalId;
 import org.hibernate.envers.Audited;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.OneToMany;
+import javax.persistence.ManyToMany;
+import java.util.HashSet;
 import java.util.Set;
 
 @Entity
 @Audited
 public class Company extends PersistableObject {
 
-    @Column(length = 50)
+    @Column
     @NaturalId
     private String name;
 
-    @OneToMany(mappedBy = "company", fetch = FetchType.LAZY)
-    @Cascade(CascadeType.ALL)
-    Set<Person> persons;
+    private String businessName;
+
+    @ManyToMany(mappedBy = "companies")
+    Set<Person> persons = new HashSet<>();
+
+    Company() {}
+
+    public Company(String name) {
+        this.name = name;
+        this.businessName = name;
+    }
+
+    public String getBusinessName() {
+        return businessName;
+    }
+
+    public void setBusinessName(String businessName) {
+        this.businessName = businessName;
+    }
 
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
     public Set<Person> getPersons() {
         return persons;
-    }
-
-    public void setPersons(Set<Person> persons) {
-        this.persons = persons;
     }
 }

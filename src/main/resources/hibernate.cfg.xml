@@ -10,9 +10,10 @@
         <property name="hibernate.connection.password">mna</property>
         <property name="hibernate.dialect">org.hibernate.dialect.MySQL57Dialect</property>
         <property name="show_sql">true</property>
-        <property name="hbm2ddl.auto">update</property>
+        <property name="hbm2ddl.auto">create</property>
         <property name="org.hibernate.envers.store_data_at_delete">true</property>
         <mapping class="model.Company"></mapping>
+        <mapping class="model.Town"></mapping>
         <mapping class="model.Person"></mapping>
     </session-factory>
 </hibernate-configuration>

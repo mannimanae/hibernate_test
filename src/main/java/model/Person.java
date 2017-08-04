@@ -1,13 +1,27 @@
 package model;
 
+import org.hibernate.annotations.FetchMode;
+import org.hibernate.annotations.FetchProfile;
 import org.hibernate.annotations.NaturalId;
 import org.hibernate.envers.Audited;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Audited
+@FetchProfile(
+        name = "person.complete",
+        fetchOverrides = {
+                @FetchProfile.FetchOverride(
+                        entity = Person.class,
+                        association = "companies",
+                        mode = FetchMode.JOIN
+                )
+        }
+)
 public class Person extends PersistableObject {
 
     public enum Gender {
@@ -15,9 +29,13 @@ public class Person extends PersistableObject {
     }
 
     @ManyToOne
-    Company company;
+    @NaturalId
+    Town town;
 
-    @Column(length = 200)
+    @ManyToMany
+    Set<Company> companies = new HashSet<>();
+
+    @Column
     @NaturalId
     String firstName;
 
@@ -35,6 +53,15 @@ public class Person extends PersistableObject {
 
     Integer age;
 
+    public Person() { }
+
+    public Town getTown() {
+        return town;
+    }
+
+    public void setTown(Town town) {
+        this.town = town;
+    }
 
     public Gender getGender() {
         return gender;
@@ -84,11 +111,11 @@ public class Person extends PersistableObject {
         this.age = age;
     }
 
-    public Company getCompany() {
-        return company;
+    public Set<Company> getCompanies() {
+        return companies;
     }
 
-    public void setCompany(Company company) {
-        this.company = company;
+    public void setCompanies(Set<Company> companies) {
+        this.companies = companies;
     }
 }
