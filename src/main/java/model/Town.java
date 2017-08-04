@@ -5,8 +5,7 @@ import org.hibernate.annotations.FetchProfile;
 import org.hibernate.annotations.NaturalId;
 import org.hibernate.envers.Audited;
 
-import javax.persistence.Entity;
-import javax.persistence.OneToMany;
+import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,6 +18,18 @@ import java.util.List;
                         entity = Town.class,
                         association = "inhabitants",
                         mode = FetchMode.JOIN
+                )
+        }
+)
+@NamedEntityGraph(
+        name = "graph.town.complete",
+        attributeNodes = {
+                @NamedAttributeNode(value = "inhabitants", subgraph = "companies")
+        },
+        subgraphs = {
+                @NamedSubgraph(
+                        name = "companies",
+                        attributeNodes = @NamedAttributeNode("companies")
                 )
         }
 )

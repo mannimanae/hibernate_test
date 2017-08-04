@@ -36,11 +36,11 @@ public class Person extends PersistableObject {
     Set<Company> companies = new HashSet<>();
 
     @Column
-    @NaturalId
+    @NaturalId(mutable = true)
     String firstName;
 
     @Column(length = 200)
-    @NaturalId
+    @NaturalId(mutable = true)
     String lastName;
 
     LocalDateTime bornDateTime;

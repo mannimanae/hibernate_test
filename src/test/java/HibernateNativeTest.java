@@ -12,46 +12,26 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import javax.persistence.PersistenceException;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.ParameterExpression;
+import javax.persistence.criteria.Root;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.Assert.*;
 
-public class PersistenceTest {
-
-    static Town town;
-    static Company testCompany;
-    static Person testPerson1;
-    static Person testPerson2;
+public class HibernateNativeTest {
 
     @BeforeClass
     public static void setup() throws Exception {
         Session session = HibernateUtil.getSessionFactory().openSession();
 
-        testCompany = new Company("Test Company");
-
-        testPerson1 = ModelFactory.createPerson();
-        testPerson1.getCompanies().add(testCompany);
-        testCompany.getPersons().add(testPerson1);
-
-        testPerson2 = ModelFactory.createPerson();
-        testPerson2.getCompanies().add(testCompany);
-        testCompany.getPersons().add(testPerson2);
-
-        town = new Town();
-        town.setName("Springfield");
-
-        testPerson1.setTown(town);
-        town.getInhabitants().add(testPerson1);
-
-        testPerson2.setTown(town);
-        town.getInhabitants().add(testPerson2);
-
         session.beginTransaction();
-        session.save(town);
-        session.save(testCompany);
-        session.save(testPerson1);
-        session.save(testPerson2);
+        session.save(TestMock.TOWN);
+        session.save(TestMock.COMPANY1);
+        session.save(TestMock.PERSON1);
+        session.save(TestMock.PERSON2);
 
         session.getTransaction().commit();
 
@@ -62,7 +42,7 @@ public class PersistenceTest {
     public void invalidInsert() throws Exception {
         Session session = HibernateUtil.getSessionFactory().openSession();
         session.beginTransaction();
-        Company invalidCompany = new Company(testCompany.getName());
+        Company invalidCompany = new Company(TestMock.COMPANY1.getName());
         session.saveOrUpdate(invalidCompany);
         session.getTransaction().commit();
         session.close();
@@ -73,7 +53,7 @@ public class PersistenceTest {
         Session session = HibernateUtil.getSessionFactory().openSession();
         session.beginTransaction();
         Company testCompany2 = new Company("Test Company 2");
-        testCompany2.setBusinessName(testCompany.getBusinessName());
+        testCompany2.setBusinessName(TestMock.COMPANY1.getBusinessName());
         session.save(testCompany2);
         session.getTransaction().commit();
         session.close();
@@ -82,18 +62,18 @@ public class PersistenceTest {
     @Test
     public void getPerson() throws Exception {
         Session session = HibernateUtil.getSessionFactory().openSession();
-        final Person pClone = session.get(Person.class, testPerson1.getDatabaseId());
-        assertEquals(testPerson1, pClone);
+        final Person pClone = session.get(Person.class, TestMock.PERSON1.getDatabaseId());
+        assertEquals(TestMock.PERSON1, pClone);
         session.close();
     }
 
     @Test
     public void getCompany() throws Exception {
         Session session = HibernateUtil.getSessionFactory().openSession();
-        final Company cClone = session.get(Company.class, testCompany.getDatabaseId());
-        assertEquals(testCompany, cClone);
-        assertTrue(testCompany.getPersons().contains(testPerson1));
-        assertTrue(testCompany.getPersons().contains(testPerson2));
+        final Company cClone = session.get(Company.class, TestMock.COMPANY1.getDatabaseId());
+        assertEquals(TestMock.COMPANY1, cClone);
+        assertTrue(TestMock.COMPANY1.getPersons().contains(TestMock.PERSON1));
+        assertTrue(TestMock.COMPANY1.getPersons().contains(TestMock.PERSON2));
         session.close();
     }
 
@@ -102,7 +82,7 @@ public class PersistenceTest {
         Session session = HibernateUtil.getSessionFactory().openSession();
         session.enableFetchProfile("town.complete");
         session.enableFetchProfile("person.complete");
-        final Town t = session.get(Town.class, town.getDatabaseId());
+        final Town t = session.get(Town.class, TestMock.TOWN.getDatabaseId());
         assertNotNull(t);
         session.close();
     }
@@ -114,7 +94,7 @@ public class PersistenceTest {
         session.enableFetchProfile("person.complete");
 
         final Optional<Town> townOptional = session.byNaturalId(Town.class)
-                .using("name", town.getName())
+                .using("name", TestMock.TOWN.getName())
                 .loadOptional();
         assertTrue(townOptional.isPresent());
         assertNotNull(townOptional.get());
@@ -137,9 +117,29 @@ public class PersistenceTest {
         session.enableFetchProfile("town.complete");
         session.enableFetchProfile("person.complete");
         final Criteria criteria = session.createCriteria(Town.class);
-        criteria.add(Restrictions.eq("name", town.getName()));
+        criteria.add(Restrictions.eq("name", TestMock.TOWN.getName()));
         criteria.setResultTransformer(criteria.DISTINCT_ROOT_ENTITY);
         assertEquals(1, criteria.list().size());
+    }
+
+    @Test
+    public void getTownByJPACriteria() throws Exception {
+        Session session = HibernateUtil.getSessionFactory().openSession();
+        final CriteriaBuilder cb = session.getCriteriaBuilder();
+        final CriteriaQuery<Town> cq = cb.createQuery(Town.class);
+        final Root<Town> from = cq.from(Town.class);
+        final ParameterExpression<String> nameParameter = cb.parameter(String.class);
+        cq.select(from).where(cb.equal(from.get("name"), nameParameter));
+
+        final String hintName = "javax.persistence.fetchgraph";
+        final String entityGraphName = "graph.town.complete";
+
+        final Query<Town> q = session.createQuery(cq);
+        q.setParameter(nameParameter, "Springfield");
+        q.setHint(hintName, session.getEntityGraph(entityGraphName));
+
+        final Town town = q.getSingleResult();
+        assertNotNull(town);
     }
 
     @Test
@@ -147,15 +147,15 @@ public class PersistenceTest {
         Session session = HibernateUtil.getSessionFactory().openSession();
         final String query = "from Company c left join fetch c.persons p left join fetch p.town where c.name = :name";
         final Company cCloneJoin = session.createQuery(query, Company.class)
-                .setParameter("name", testCompany.getName())
+                .setParameter("name", TestMock.COMPANY1.getName())
                 .getSingleResult();
-        assertEquals(testCompany, cCloneJoin);
+        assertEquals(TestMock.COMPANY1, cCloneJoin);
     }
 
     @Test
     public void attributeChange() throws Exception {
         Session session = HibernateUtil.getSessionFactory().openSession();
-        Person p = session.get(Person.class, testPerson1.getDatabaseId());
+        Person p = session.get(Person.class, TestMock.PERSON1.getDatabaseId());
 
         final Integer oldAge = p.getAge();
         p.setAge(oldAge * 2);
@@ -179,13 +179,13 @@ public class PersistenceTest {
     @Test
     public void relationshipChange() throws Exception {
         Session session = HibernateUtil.getSessionFactory().openSession();
-        final Company c = session.get(Company.class, testCompany.getDatabaseId());
+        final Company c = session.get(Company.class, TestMock.COMPANY1.getDatabaseId());
         assertEquals(2, c.getPersons().size());
 
         final Optional<Person> personOpt = c.getPersons()
                 .parallelStream()
-                .filter(p -> p.getFirstName().equals(testPerson2.getFirstName()))
-                .filter(p -> p.getLastName().equals(testPerson2.getLastName()))
+                .filter(p -> p.getFirstName().equals(TestMock.PERSON2.getFirstName()))
+                .filter(p -> p.getLastName().equals(TestMock.PERSON2.getLastName()))
                 .findAny();
 
         assertTrue(personOpt.isPresent());
@@ -204,7 +204,7 @@ public class PersistenceTest {
         session.close();
 
         session = HibernateUtil.getSessionFactory().openSession();
-        final Company c2 = session.get(Company.class, testCompany.getDatabaseId());
+        final Company c2 = session.get(Company.class, TestMock.COMPANY1.getDatabaseId());
         assertEquals(1, c2.getPersons().size());
 
         final AuditReader auditReader = AuditReaderFactory.get(session);
