@@ -21,7 +21,7 @@ public class TestMock {
         COMPANY1.getPersons().add(PERSON2);
 
         TOWN = new Town();
-        TOWN.setName("Springfield");
+        TOWN.setName("Test Town");
 
         PERSON1.setTown(TOWN);
         TOWN.getInhabitants().add(PERSON1);

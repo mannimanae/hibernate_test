@@ -1,5 +1,7 @@
 import model.Company;
 import model.Person;
+import model.Scenario;
+import model.Town;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
@@ -30,18 +32,42 @@ public class ModelFactory {
         return c;
     }
 
-    public static Collection<Company> createRandomCompanies(int n, int np) {
-        List<Company> cList = new ArrayList<>(n);
-        for (int i = 0; i < n; i++) {
-            Company c = createCompany();
-            for (int j = 0; j < RNDM.nextInt(np) + 1; j++) {
-                Person p = createPerson();
-                p.getCompanies().add(c);
-                c.getPersons().add(p);
-            }
-            cList.add(c);
+    public static Scenario createRandomScenario(int nc, int np) {
+        Town townSpringfield = new Town();
+        townSpringfield.setName("Springfield");
+
+        List<Person> persons = new ArrayList<>();
+        List<Company> companies = new ArrayList<>();
+
+        for (int i = 0; i < np; i++) {
+            persons.add(ModelFactory.createPerson());
         }
-        return cList;
+
+        for (int i = 0; i < nc; i++) {
+            companies.add(ModelFactory.createCompany());
+        }
+
+        for (Person p : persons) {
+            townSpringfield.getInhabitants().add(p);
+            p.setTown(townSpringfield);
+
+            final int rndCompany = RNDM.nextInt(companies.size());
+            Company c = companies.get(rndCompany);
+
+            c.getPersons().add(p);
+            p.getCompanies().add(c);
+        }
+
+        for(Company c : companies) {
+            final int rndPerson = RNDM.nextInt(persons.size());
+            Person p = persons.get(rndPerson);
+
+            c.getPersons().add(p);
+            p.getCompanies().add(c);
+        }
+
+        Scenario s = new Scenario(townSpringfield, companies, persons);
+        return s;
     }
 
     static final String AB = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";

@@ -12,11 +12,11 @@
         <class>model.Town</class>
 
         <properties>
-            <property name="javax.persistence.jdbc.driver" value="com.mysql.jdbc.Driver"/>
-            <property name="javax.persistence.jdbc.url" value="jdbc:mysql://localhost:3306/chef"/>
-            <property name="javax.persistence.jdbc.user" value="mna"/>
-            <property name="javax.persistence.jdbc.password" value="mna"/>
-            <property name="hibernate.dialect" value="org.hibernate.dialect.MySQL57Dialect"/>
+            <property name="javax.persistence.jdbc.driver" value="org.hsqldb.jdbcDriver"/>
+            <property name="javax.persistence.jdbc.url" value="jdbc:hsqldb:file:data/testdb"/>
+            <property name="javax.persistence.jdbc.user" value="sa"/>
+            <property name="javax.persistence.jdbc.password" value=""/>
+            <property name="hibernate.dialect" value="org.hibernate.dialect.HSQLDialect"/>
             <property name="hibernate.hbm2ddl.auto" value="create"/>
             <property name="org.hibernate.envers.store_data_at_delete" value="true" />
             <property name="hibernate.show_sql" value="true" />

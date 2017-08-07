@@ -1,5 +1,6 @@
 import model.Company;
 import model.Person;
+import model.Scenario;
 import model.Town;
 import org.hibernate.Criteria;
 import org.hibernate.Session;
@@ -7,6 +8,7 @@ import org.hibernate.criterion.Restrictions;
 import org.hibernate.envers.AuditReader;
 import org.hibernate.envers.AuditReaderFactory;
 import org.hibernate.query.Query;
+import org.hsqldb.lib.StopWatch;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -106,7 +108,9 @@ public class HibernateNativeTest {
         Session session = HibernateUtil.getSessionFactory().openSession();
         session.enableFetchProfile("town.complete");
         session.enableFetchProfile("person.complete");
-        final List<Town> townList = session.createQuery("from Town t", Town.class).getResultList();
+        final List<Town> townList = session.createQuery("from Town t where t.name = :name", Town.class)
+                .setParameter("name", TestMock.TOWN.getName())
+                .getResultList();
         assertEquals(1, townList.size());
         session.close();
     }
@@ -133,6 +137,8 @@ public class HibernateNativeTest {
 
         final String hintName = "javax.persistence.fetchgraph";
         final String entityGraphName = "graph.town.complete";
+
+        // EG kann man per Hand bauen
 
         final Query<Town> q = session.createQuery(cq);
         q.setParameter(nameParameter, "Springfield");
@@ -216,6 +222,35 @@ public class HibernateNativeTest {
         assertTrue(historizedPerson.getCompanies().contains(c));
 
         session.close();
+    }
+
+    @Test
+    public void saveScenario() throws Exception {
+        final Scenario s = ModelFactory.createRandomScenario(1000, 1000);
+        Session session = HibernateUtil.getSessionFactory().openSession();
+        session.beginTransaction();
+
+        session.saveOrUpdate(s.getTown());
+
+        for(Person p : s.getPersonList())
+            session.saveOrUpdate(p);
+
+        for(Company c : s.getCompanyList())
+            session.saveOrUpdate(c);
+
+        session.getTransaction().commit();
+
+        StopWatch w = new StopWatch();
+        w.start();
+
+        session = HibernateUtil.getSessionFactory().openSession();
+        final String query = "select distinct c from Company c left join fetch c.persons p left join fetch p.town";
+        session.createQuery(query, Company.class).getResultList();
+        session.close();
+
+        w.stop();
+
+        System.out.println(w.elapsedTimeToMessage("Select Companies"));
     }
 
     @AfterClass
